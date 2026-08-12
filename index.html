@@ -1,0 +1,770 @@
+import React, { useState, useMemo } from 'react';
+import {
+  Wallet,
+  TrendingUp,
+  TrendingDown,
+  Plus,
+  Search,
+  Filter,
+  CreditCard,
+  Settings,
+  PieChart,
+  List,
+  CheckCircle2,
+  XCircle,
+  Bot,
+  Send,
+  Trash2,
+  Sparkles,
+  ChevronRight,
+  ArrowUpRight,
+  PiggyBank,
+  UserCheck,
+  Tag,
+  Calendar,
+  ChevronDown,
+  FileSpreadsheet,
+  Layers,
+  Bell,
+  Activity,
+  Edit3,
+  Repeat,
+  ArrowDown
+} from 'lucide-react';
+
+const INITIAL_TRANSACTIONS = [
+  {
+    id: 'tx-1',
+    merchant: '145 PVEA PIURA',
+    description: 'Consumo Tarjeta de Débito BCP',
+    amount: 29.90,
+    type: 'gasto',
+    category: 'Otros',
+    account: 'BCP Débito',
+    card: '•••• 9657',
+    date: 'Hoy, 07:34 pm',
+    source: 'whatsapp'
+  },
+  {
+    id: 'tx-2',
+    merchant: 'TIENDA REAL PLAZA PIURA',
+    description: 'Pago a TIENDA REAL PLAZA PIURA',
+    amount: 21.70,
+    type: 'gasto',
+    category: 'Compras personales',
+    account: 'BCP Débito',
+    card: '•••• 9657',
+    date: 'Hoy, 07:22 pm',
+    source: 'whatsapp'
+  },
+  {
+    id: 'tx-3',
+    merchant: '145 PVEA PIURA',
+    description: 'Pago a 145 PVEA PIURA',
+    amount: 65.65,
+    type: 'gasto',
+    category: 'Otros',
+    account: 'BCP Débito',
+    card: '•••• 9657',
+    date: 'Hoy, 07:08 pm',
+    source: 'whatsapp'
+  },
+  {
+    id: 'tx-4',
+    merchant: 'Wardadito Ando BCP',
+    description: 'Aporte voluntario a wardadito',
+    amount: 2.41,
+    type: 'gasto',
+    category: 'Ahorro e inversión',
+    account: 'BCP - Ahorros',
+    card: '•••• 069',
+    date: 'Hoy, 10:23 pm',
+    source: 'whatsapp'
+  }
+];
+
+const INITIAL_CATEGORIES = [
+  { id: 'c1', name: 'Ahorro e inversión', enabled: true, color: 'bg-emerald-500' },
+  { id: 'c2', name: 'Apoyo a terceros', enabled: true, color: 'bg-teal-500' },
+  { id: 'c3', name: 'Auto y movilidad', enabled: true, color: 'bg-blue-500' },
+  { id: 'c4', name: 'Comida y bebidas', enabled: true, color: 'bg-amber-500' },
+  { id: 'c5', name: 'Compras personales', enabled: true, color: 'bg-indigo-500' },
+  { id: 'c6', name: 'Otros', enabled: true, color: 'bg-purple-500' }
+];
+
+export default function App() {
+  // Navigation Tabs
+  const [activeTab, setActiveTab] = useState('presupuestos'); // Default to exact view requested in screenshot
+  const [currency, setCurrency] = useState('S/');
+  const [selectedMonth, setSelectedMonth] = useState('Este mes');
+
+  // Budget Values (Matching Screenshot)
+  const [presupuestoTotal, setPresupuestoTotal] = useState(450.00);
+  const [transactions, setTransactions] = useState(INITIAL_TRANSACTIONS);
+  const [categories, setCategories] = useState(INITIAL_CATEGORIES);
+
+  // Category & Account Specific Budgets
+  const [categoryBudgets, setCategoryBudgets] = useState([
+    { id: 'cb1', category: 'Otros', budget: 150, spent: 95.55 },
+    { id: 'cb2', category: 'Compras personales', budget: 100, spent: 21.70 }
+  ]);
+
+  // Modals & Forms
+  const [isEditBudgetOpen, setIsEditBudgetOpen] = useState(false);
+  const [isAddTxOpen, setIsAddTxOpen] = useState(false);
+  const [isAddCategoryBudgetOpen, setIsAddCategoryBudgetOpen] = useState(false);
+  const [newBudgetVal, setNewBudgetVal] = useState(450);
+
+  // New Transaction Form
+  const [newTx, setNewTx] = useState({
+    merchant: '',
+    amount: '',
+    type: 'gasto',
+    category: 'Comida y bebidas',
+    account: 'BCP Débito'
+  });
+
+  // Category Budget Form
+  const [newCatBudget, setNewCatBudget] = useState({ category: 'Comida y bebidas', limit: '' });
+
+  // WhatsApp Simulator State
+  const [botMessages, setBotMessages] = useState([
+    {
+      id: 1,
+      sender: 'bot',
+      text: '¡Hola Luana! 🤖 Acabo de ver este movimiento en tu correo BCP. ¿Lo anotamos?\n\n💰 **Monto:** S/ 29.90 PEN\n🏪 **Comercio:** 145 PVEA PIURA\n🏷️ **Categoría:** Otros\n💳 **Banco:** BCP - débito (•••• 9657)',
+      hasActions: true,
+      pendingTx: {
+        merchant: '145 PVEA PIURA',
+        amount: 29.90,
+        category: 'Otros',
+        account: 'BCP Débito'
+      }
+    }
+  ]);
+  const [chatInput, setChatInput] = useState('');
+
+  // Computed Values
+  const gastadoTotal = useMemo(() => {
+    return transactions.filter(t => t.type === 'gasto').reduce((sum, t) => sum + t.amount, 0);
+  }, [transactions]);
+
+  const disponible = useMemo(() => {
+    return Math.max(0, presupuestoTotal - gastadoTotal);
+  }, [presupuestoTotal, gastadoTotal]);
+
+  const porcentajeRestante = useMemo(() => {
+    if (presupuestoTotal === 0) return 0;
+    return Math.max(0, Math.round((disponible / presupuestoTotal) * 100));
+  }, [presupuestoTotal, disponible]);
+
+  // Handlers
+  const handleSavePresupuesto = (e) => {
+    e.preventDefault();
+    const parsed = parseFloat(newBudgetVal);
+    if (!isNaN(parsed) && parsed >= 0) {
+      setPresupuestoTotal(parsed);
+    }
+    setIsEditBudgetOpen(false);
+  };
+
+  const handleAddTransaction = (e) => {
+    e.preventDefault();
+    if (!newTx.merchant || !newTx.amount) return;
+
+    const created = {
+      id: `tx-${Date.now()}`,
+      merchant: newTx.merchant,
+      description: `Registro manual`,
+      amount: parseFloat(newTx.amount),
+      type: newTx.type,
+      category: newTx.category,
+      account: newTx.account,
+      card: 'Manual',
+      date: 'Hoy, ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      source: 'manual'
+    };
+
+    setTransactions([created, ...transactions]);
+    setIsAddTxOpen(false);
+    setNewTx({ merchant: '', amount: '', type: 'gasto', category: 'Comida y bebidas', account: 'BCP Débito' });
+  };
+
+  const handleAddCategoryBudget = (e) => {
+    e.preventDefault();
+    if (!newCatBudget.limit) return;
+    setCategoryBudgets([
+      ...categoryBudgets,
+      { id: `cb-${Date.now()}`, category: newCatBudget.category, budget: parseFloat(newCatBudget.limit), spent: 0 }
+    ]);
+    setIsAddCategoryBudgetOpen(false);
+    setNewCatBudget({ category: 'Comida y bebidas', limit: '' });
+  };
+
+  const handleConfirmBotTx = (pending) => {
+    const created = {
+      id: `tx-${Date.now()}`,
+      merchant: pending.merchant,
+      description: `Registrado vía WhatsApp`,
+      amount: pending.amount,
+      type: 'gasto',
+      category: pending.category,
+      account: pending.account,
+      card: '•••• 9657',
+      date: 'Hoy, ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      source: 'whatsapp'
+    };
+    setTransactions([created, ...transactions]);
+    setBotMessages(prev => [
+      ...prev,
+      { id: Date.now(), sender: 'user', text: 'Sí, guárdalo.' },
+      { id: Date.now() + 1, sender: 'bot', text: `¡Listo, Luana! 🟢 Registré tu gasto de S/ ${pending.amount.toFixed(2)} en ${pending.merchant}.` }
+    ]);
+  };
+
+  const handleSendChatMessage = () => {
+    if (!chatInput.trim()) return;
+    const text = chatInput;
+    setChatInput('');
+    setBotMessages(prev => [...prev, { id: Date.now(), sender: 'user', text }]);
+    setTimeout(() => {
+      setBotMessages(prev => [
+        ...prev,
+        { id: Date.now() + 1, sender: 'bot', text: '📝 ¡Anotado! He actualizado tu resumen financiero en LUKA.' }
+      ]);
+    }, 500);
+  };
+
+  return (
+    <div className="min-h-screen bg-[#F5F8F5] text-slate-900 font-sans flex flex-col items-center justify-start pb-28 pt-3 px-3 md:px-6">
+      
+      {/* CONTAINER PRINCIPAL ANCHO MÓVIL/TABLET */}
+      <div className="w-full max-w-md mx-auto space-y-4">
+
+        {/* 1. TOP BAR (Mascota LUKA + Notificaciones + Ajustes) */}
+        <div className="flex items-center justify-between py-1">
+          {/* Avatar Mascota LUKA con Lentes */}
+          <div className="w-11 h-11 rounded-2xl bg-emerald-100 border border-emerald-300/60 flex items-center justify-center text-xl shadow-xs overflow-hidden">
+            🐼
+          </div>
+
+          {/* Iconos de Notificación y Configuración */}
+          <div className="flex items-center gap-2">
+            <button className="w-10 h-10 rounded-full bg-white border border-slate-200/80 flex items-center justify-center text-slate-700 shadow-2xs relative hover:bg-slate-50">
+              <Bell size={18} />
+              <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-500"></span>
+            </button>
+            <button className="w-10 h-10 rounded-full bg-white border border-slate-200/80 flex items-center justify-center text-slate-700 shadow-2xs hover:bg-slate-50">
+              <Settings size={18} />
+            </button>
+          </div>
+        </div>
+
+        {/* 2. BARRA DE FILTROS CÁPSULA (Personal | S/ | Este mes) */}
+        <div className="bg-white rounded-3xl p-1.5 border border-slate-200/80 shadow-2xs flex items-center justify-between text-xs font-bold">
+          
+          {/* Badge Exclusivo Finanzas Personales */}
+          <div className="bg-[#DCF8C6] text-emerald-950 rounded-2xl py-1.5 px-3.5 flex items-center gap-1.5 font-extrabold shadow-2xs">
+            <UserCheck size={14} />
+            <span>Personal</span>
+          </div>
+
+          <div className="h-5 w-px bg-slate-200 mx-1"></div>
+
+          {/* Moneda */}
+          <button className="flex items-center gap-0.5 text-slate-800 px-1 py-1 font-extrabold">
+            <span>S/</span>
+            <ChevronDown size={14} className="text-slate-400" />
+          </button>
+
+          <div className="h-5 w-px bg-slate-200 mx-1"></div>
+
+          {/* Período */}
+          <button className="flex items-center gap-1 text-slate-800 pr-2 py-1 font-extrabold">
+            <Calendar size={14} className="text-slate-400" />
+            <span>Este mes</span>
+            <ChevronDown size={14} className="text-slate-400" />
+          </button>
+        </div>
+
+        {/* 3. VISTA MAIN DEPENDIENDO DE LA PESTAÑA ACTIVA */}
+
+        {/* PESTAÑA PRESUPUESTOS */}
+        {activeTab === 'presupuestos' && (
+          <div className="space-y-4">
+            
+            {/* Botón: + Editar presupuesto mensual */}
+            <button
+              onClick={() => { setNewBudgetVal(presupuestoTotal); setIsEditBudgetOpen(true); }}
+              className="w-full bg-white border border-slate-200/90 rounded-2xl py-3 px-4 text-xs font-bold text-slate-800 flex items-center justify-start gap-2 shadow-2xs hover:bg-slate-50 transition-colors"
+            >
+              <span className="text-slate-900 font-extrabold text-sm">+</span>
+              <span>Editar presupuesto mensual</span>
+            </button>
+
+            {/* GRID 2x2 DE CARDS DE PRESUPUESTO */}
+            <div className="grid grid-cols-2 gap-3">
+              
+              {/* Card 1: Presupuesto total */}
+              <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-2xs space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <Wallet size={16} />
+                  </div>
+                  <span className="text-xs font-bold text-slate-500 leading-tight">Presupuesto total</span>
+                </div>
+                <p className="text-xl font-black text-emerald-600 tracking-tight">
+                  {Math.round(presupuestoTotal)}
+                </p>
+              </div>
+
+              {/* Card 2: Gastado */}
+              <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-2xs space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center">
+                    <ArrowDown size={16} />
+                  </div>
+                  <span className="text-xs font-bold text-slate-500 leading-tight">Gastado</span>
+                </div>
+                <p className="text-xl font-black text-orange-600 tracking-tight">
+                  {gastadoTotal.toFixed(2)}
+                </p>
+              </div>
+
+              {/* Card 3: Disponible */}
+              <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-2xs space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center">
+                    <PiggyBank size={16} />
+                  </div>
+                  <span className="text-xs font-bold text-slate-500 leading-tight">Disponible</span>
+                </div>
+                <p className="text-xl font-black text-purple-600 tracking-tight">
+                  {disponible.toFixed(2)}
+                </p>
+              </div>
+
+              {/* Card 4: Te queda X% del presupuesto */}
+              <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-2xs space-y-2.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <Wallet size={16} />
+                  </div>
+                  <span className="text-xs font-bold text-emerald-700 leading-tight">
+                    Te queda {porcentajeRestante}%...
+                  </span>
+                </div>
+
+                {/* Progress bar verde */}
+                <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                  <div
+                    className="bg-emerald-500 h-2.5 rounded-full transition-all duration-500"
+                    style={{ width: `${porcentajeRestante}%` }}
+                  ></div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* SECCIÓN 1: Presupuesto por categoría */}
+            <div className="bg-[#EDF8EE] rounded-3xl p-5 border border-emerald-200/60 shadow-2xs relative overflow-hidden space-y-3">
+              <div className="flex items-start justify-between">
+                <div className="max-w-[65%] space-y-1">
+                  <h3 className="font-black text-slate-900 text-base">Presupuesto por categoría</h3>
+                  <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                    Asigna presupuestos a tus categorías y controla tus gastos fácilmente.
+                  </p>
+                </div>
+
+                {/* Gráfico circular ilustrativo con moneda S/ */}
+                <div className="relative w-16 h-16 shrink-0 flex items-center justify-center">
+                  <svg className="w-full h-full" viewBox="0 0 36 36">
+                    <path className="text-emerald-300" strokeWidth="12" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <path className="text-emerald-500" strokeDasharray="60, 100" strokeWidth="12" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <path className="text-emerald-200" strokeDasharray="25, 100" strokeDashoffset="-60" strokeWidth="12" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                  </svg>
+                  <div className="absolute -bottom-1 -right-1 bg-amber-400 text-amber-950 font-black text-[10px] w-6 h-6 rounded-full flex items-center justify-center shadow-xs border border-white">
+                    S/
+                  </div>
+                </div>
+              </div>
+
+              {/* Botón Punteado: + Añadir presupuesto por categoría */}
+              <button
+                onClick={() => setIsAddCategoryBudgetOpen(true)}
+                className="w-full bg-white/70 hover:bg-white border-2 border-dashed border-emerald-400/80 rounded-2xl py-3 px-4 text-xs font-bold text-emerald-800 flex items-center justify-center gap-1.5 transition-all shadow-2xs"
+              >
+                <span>+</span>
+                <span>Añadir presupuesto por categoría</span>
+              </button>
+
+              {/* Listado de Presupuestos por Categoría */}
+              {categoryBudgets.length > 0 && (
+                <div className="space-y-2 pt-1">
+                  {categoryBudgets.map((cb) => (
+                    <div key={cb.id} className="bg-white/90 rounded-2xl p-3 border border-emerald-100 text-xs flex items-center justify-between">
+                      <span className="font-bold text-slate-800">{cb.category}</span>
+                      <span className="font-extrabold text-emerald-700">S/ {cb.spent.toFixed(2)} / S/ {cb.budget.toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* SECCIÓN 2: Presupuesto por cuenta */}
+            <div className="bg-[#F6F4FB] rounded-3xl p-5 border border-purple-200/60 shadow-2xs space-y-3">
+              <div className="space-y-1">
+                <h3 className="font-black text-slate-900 text-base">Presupuesto por cuenta</h3>
+                <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                  Establece presupuestos por cuenta y lleva un mejor control de tu dinero personal.
+                </p>
+              </div>
+
+              {/* Botón Punteado: + Añadir presupuesto por cuenta */}
+              <button
+                onClick={() => alert('Definir límite de gasto personal para tus tarjetas BCP, Yape o Interbank.')}
+                className="w-full bg-white/70 hover:bg-white border-2 border-dashed border-purple-300 rounded-2xl py-3 px-4 text-xs font-bold text-purple-800 flex items-center justify-center gap-1.5 transition-all shadow-2xs"
+              >
+                <span>+</span>
+                <span>Añadir presupuesto por cuenta</span>
+              </button>
+            </div>
+
+          </div>
+        )}
+
+        {/* PESTAÑA INICIO */}
+        {activeTab === 'inicio' && (
+          <div className="space-y-4">
+            {/* Banner Hola y Gastos del Mes */}
+            <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-2xs space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-black text-slate-900 text-base">¡Hola, Luana! 👋</h3>
+                <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2.5 py-1 rounded-full">Personal</span>
+              </div>
+              <p className="text-xs text-slate-500">Resumen de tus gastos e ingresos personales en Perú.</p>
+              <div className="grid grid-cols-2 gap-2 pt-2">
+                <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                  <span className="text-[10px] font-bold text-slate-400">Total Gastado</span>
+                  <p className="text-lg font-black text-slate-900">S/ {gastadoTotal.toFixed(2)}</p>
+                </div>
+                <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                  <span className="text-[10px] font-bold text-slate-400">Disponible</span>
+                  <p className="text-lg font-black text-emerald-600">S/ {disponible.toFixed(2)}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Banner Bot WhatsApp */}
+            <div className="bg-emerald-800 text-white rounded-3xl p-5 shadow-xs space-y-2">
+              <div className="flex items-center gap-2">
+                <Bot size={20} className="text-emerald-300" />
+                <h4 className="font-extrabold text-sm">Bot de WhatsApp LUKA</h4>
+              </div>
+              <p className="text-xs text-emerald-100">Lee automáticamente tus consumos de BCP, Yape e Interbank desde tu correo.</p>
+              <button onClick={() => setActiveTab('whatsapp')} className="mt-2 bg-white text-emerald-950 text-xs font-bold px-3.5 py-2 rounded-xl">
+                Probar Simulador de WhatsApp →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* PESTAÑA MI DINERO */}
+        {activeTab === 'midinero' && (
+          <div className="space-y-4">
+            <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-2xs space-y-4">
+              <h3 className="font-black text-slate-900 text-base">Gastos por Categoría</h3>
+
+              {/* Donut chart */}
+              <div className="flex flex-col items-center justify-center py-4">
+                <div className="relative w-40 h-40 flex items-center justify-center">
+                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                    <path className="text-slate-100" strokeWidth="4" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <path className="text-emerald-500" strokeDasharray="80, 100" strokeWidth="4" strokeLinecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <path className="text-indigo-400" strokeDasharray="20, 100" strokeDashoffset="-80" strokeWidth="4" strokeLinecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                  </svg>
+                  <div className="absolute text-center">
+                    <span className="text-[10px] text-slate-400 font-bold block">Gastado</span>
+                    <span className="text-lg font-black text-slate-900">S/ {gastadoTotal.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2 text-xs">
+                <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-2xl">
+                  <span className="font-bold text-slate-800">Otros / Supermercado</span>
+                  <span className="font-black text-slate-900">S/ 95.55 (82%)</span>
+                </div>
+                <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-2xl">
+                  <span className="font-bold text-slate-800">Compras personales</span>
+                  <span className="font-black text-slate-900">S/ 21.70 (18%)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* PESTAÑA CATEGORÍAS */}
+        {activeTab === 'categorias' && (
+          <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-2xs space-y-4">
+            <h3 className="font-black text-slate-900 text-base">Categorías del Sistema</h3>
+            <div className="space-y-2 text-xs">
+              {categories.map((c) => (
+                <div key={c.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <span className={`w-3 h-3 rounded-full ${c.color}`}></span>
+                    <span className="font-bold text-slate-800">{c.name}</span>
+                  </div>
+                  <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">Activa</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* PESTAÑA MOVIMIENTOS */}
+        {activeTab === 'movimientos' && (
+          <div className="bg-white rounded-3xl border border-slate-200/80 shadow-2xs overflow-hidden space-y-2">
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="font-black text-slate-900 text-base">Movimientos Confirmados</h3>
+              <button onClick={() => setIsAddTxOpen(true)} className="bg-emerald-600 text-white font-bold text-xs px-3 py-1.5 rounded-xl">+ Añadir</button>
+            </div>
+            <div className="divide-y divide-slate-100 text-xs">
+              {transactions.map((tx) => (
+                <div key={tx.id} className="p-3.5 flex items-center justify-between">
+                  <div>
+                    <p className="font-bold text-slate-900">{tx.merchant}</p>
+                    <p className="text-[10px] text-slate-400">{tx.account} • {tx.date}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-black text-slate-900">- S/ {tx.amount.toFixed(2)}</p>
+                    <span className="text-[9px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">{tx.category}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* PESTAÑA BOT WHATSAPP SIMULATOR */}
+        {activeTab === 'whatsapp' && (
+          <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xl overflow-hidden flex flex-col h-[520px]">
+            <div className="bg-[#075E54] text-white p-3.5 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-emerald-200 flex items-center justify-center font-bold text-emerald-950 text-base">🌱</div>
+              <div>
+                <h3 className="font-bold text-xs">LUKA Bot - Finanzas Perú</h3>
+                <p className="text-[10px] text-emerald-100">En línea • Meta Business API</p>
+              </div>
+            </div>
+
+            <div className="flex-1 p-3 overflow-y-auto space-y-3 bg-[#E5DDD5] text-xs">
+              {botMessages.map((msg) => (
+                <div key={msg.id} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}>
+                  <div className={`max-w-[85%] p-3 rounded-2xl whitespace-pre-line leading-relaxed shadow-2xs ${
+                    msg.sender === 'user' ? 'bg-[#DCF8C6] text-slate-900' : 'bg-white text-slate-800 border border-slate-200'
+                  }`}>
+                    {msg.text}
+                    {msg.hasActions && (
+                      <div className="mt-2 pt-2 border-t border-slate-200">
+                        <button onClick={() => handleConfirmBotTx(msg.pendingTx)} className="w-full py-1.5 bg-emerald-600 text-white font-bold rounded-xl text-xs">
+                          Sí, guárdalo en LUKA
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="p-2.5 bg-white border-t border-slate-200 flex items-center gap-2">
+              <input
+                type="text"
+                placeholder="Escribe a LUKA..."
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSendChatMessage()}
+                className="flex-1 bg-slate-100 text-slate-800 text-xs px-3 py-2 rounded-2xl focus:outline-none"
+              />
+              <button onClick={handleSendChatMessage} className="bg-emerald-600 text-white p-2 rounded-2xl"><Send size={15} /></button>
+            </div>
+          </div>
+        )}
+
+      </div>
+
+      {/* 4. FLOATING BOTTOM NAVIGATION BAR */}
+      <div className="fixed bottom-3 left-1/2 transform -translate-x-1/2 w-full max-w-sm px-2 z-50">
+        <div className="bg-white border border-slate-200/90 rounded-full p-1.5 shadow-xl flex items-center justify-around text-slate-400">
+          
+          {/* Tab 1: Inicio */}
+          <button
+            onClick={() => setActiveTab('inicio')}
+            className={`flex flex-col items-center justify-center p-2 rounded-full transition-all ${
+              activeTab === 'inicio' ? 'bg-[#D1F8D3] text-emerald-950 font-black' : 'hover:text-slate-600'
+            }`}
+          >
+            <Wallet size={18} />
+            <span className="text-[9px] mt-0.5 font-bold">Inicio</span>
+          </button>
+
+          {/* Tab 2: Mi Dinero */}
+          <button
+            onClick={() => setActiveTab('midinero')}
+            className={`flex flex-col items-center justify-center p-2 rounded-full transition-all ${
+              activeTab === 'midinero' ? 'bg-[#D1F8D3] text-emerald-950 font-black' : 'hover:text-slate-600'
+            }`}
+          >
+            <PieChart size={18} />
+            <span className="text-[9px] mt-0.5 font-bold">Mi Dinero</span>
+          </button>
+
+          {/* Tab 3: Presupuestos */}
+          <button
+            onClick={() => setActiveTab('presupuestos')}
+            className={`flex flex-col items-center justify-center px-4 py-2 rounded-full transition-all ${
+              activeTab === 'presupuestos' ? 'bg-[#D1F8D3] text-emerald-950 font-black shadow-2xs' : 'hover:text-slate-600'
+            }`}
+          >
+            <PieChart size={18} className="text-emerald-950" />
+            <span className="text-[9px] mt-0.5 font-extrabold text-emerald-950">Presupuestos</span>
+          </button>
+
+          {/* Tab 4: Categorías */}
+          <button
+            onClick={() => setActiveTab('categorias')}
+            className={`flex flex-col items-center justify-center p-2 rounded-full transition-all ${
+              activeTab === 'categorias' ? 'bg-[#D1F8D3] text-emerald-950 font-black' : 'hover:text-slate-600'
+            }`}
+          >
+            <Tag size={18} />
+            <span className="text-[9px] mt-0.5 font-bold">Categorías</span>
+          </button>
+
+          {/* Tab 5: Movimientos */}
+          <button
+            onClick={() => setActiveTab('movimientos')}
+            className={`flex flex-col items-center justify-center p-2 rounded-full transition-all ${
+              activeTab === 'movimientos' ? 'bg-[#D1F8D3] text-emerald-950 font-black' : 'hover:text-slate-600'
+            }`}
+          >
+            <Activity size={18} />
+            <span className="text-[9px] mt-0.5 font-bold">Movimientos</span>
+          </button>
+
+        </div>
+      </div>
+
+      {/* MODAL: EDITAR PRESUPUESTO MENSUAL */}
+      {isEditBudgetOpen && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-xs shadow-2xl space-y-4">
+            <h3 className="font-extrabold text-slate-900 text-base">Editar Presupuesto Mensual</h3>
+            <form onSubmit={handleSavePresupuesto} className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1">Monto Total en Soles (S/)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  required
+                  value={newBudgetVal}
+                  onChange={(e) => setNewBudgetVal(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button type="button" onClick={() => setIsEditBudgetOpen(false)} className="px-4 py-2 bg-slate-100 text-slate-600 font-bold rounded-xl text-xs">
+                  Cancelar
+                </button>
+                <button type="submit" className="px-4 py-2 bg-emerald-600 text-white font-bold rounded-xl text-xs shadow-xs">
+                  Guardar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: AÑADIR PRESUPUESTO POR CATEGORÍA */}
+      {isAddCategoryBudgetOpen && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-xs shadow-2xl space-y-4">
+            <h3 className="font-extrabold text-slate-900 text-base">Presupuesto por Categoría</h3>
+            <form onSubmit={handleAddCategoryBudget} className="space-y-3 text-xs">
+              <div>
+                <label className="block font-bold text-slate-600 mb-1">Selecciona Categoría</label>
+                <select
+                  value={newCatBudget.category}
+                  onChange={(e) => setNewCatBudget({ ...newCatBudget, category: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-800"
+                >
+                  <option value="Comida y bebidas">Comida y bebidas</option>
+                  <option value="Auto y movilidad">Auto y movilidad</option>
+                  <option value="Apoyo a terceros">Apoyo a terceros</option>
+                  <option value="Otros">Otros</option>
+                </select>
+              </div>
+              <div>
+                <label className="block font-bold text-slate-600 mb-1">Monto Límite (S/)</label>
+                <input
+                  type="number"
+                  placeholder="Ej: 200"
+                  required
+                  value={newCatBudget.limit}
+                  onChange={(e) => setNewCatBudget({ ...newCatBudget, limit: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl font-black text-slate-900"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button type="button" onClick={() => setIsAddCategoryBudgetOpen(false)} className="px-4 py-2 bg-slate-100 text-slate-600 font-bold rounded-xl text-xs">
+                  Cancelar
+                </button>
+                <button type="submit" className="px-4 py-2 bg-emerald-600 text-white font-bold rounded-xl text-xs shadow-xs">
+                  Añadir
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: REGISTRAR GASTO RÁPIDO */}
+      {isAddTxOpen && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-xs shadow-2xl space-y-3 text-xs">
+            <h3 className="font-extrabold text-slate-900 text-base">Anotar Movimiento</h3>
+            <form onSubmit={handleAddTransaction} className="space-y-3">
+              <div>
+                <label className="block font-bold text-slate-600 mb-1">Comercio / Lugar</label>
+                <input
+                  type="text"
+                  placeholder="Ej: Tambo, Plaza Vea, Yape"
+                  required
+                  value={newTx.merchant}
+                  onChange={(e) => setNewTx({ ...newTx, merchant: e.target.value })}
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-2xl"
+                />
+              </div>
+              <div>
+                <label className="block font-bold text-slate-600 mb-1">Monto (S/)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  required
+                  value={newTx.amount}
+                  onChange={(e) => setNewTx({ ...newTx, amount: e.target.value })}
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-2xl font-black"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button type="button" onClick={() => setIsAddTxOpen(false)} className="px-4 py-2 bg-slate-100 text-slate-600 font-bold rounded-xl">Cancelar</button>
+                <button type="submit" className="px-4 py-2 bg-emerald-600 text-white font-bold rounded-xl">Guardar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
