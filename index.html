@@ -94,11 +94,11 @@ const INITIAL_CATEGORIES = [
 
 export default function App() {
   // Navigation Tabs
-  const [activeTab, setActiveTab] = useState('presupuestos'); // Default to exact view requested in screenshot
+  const [activeTab, setActiveTab] = useState('presupuestos');
   const [currency, setCurrency] = useState('S/');
   const [selectedMonth, setSelectedMonth] = useState('Este mes');
 
-  // Budget Values (Matching Screenshot)
+  // Budget Values
   const [presupuestoTotal, setPresupuestoTotal] = useState(450.00);
   const [transactions, setTransactions] = useState(INITIAL_TRANSACTIONS);
   const [categories, setCategories] = useState(INITIAL_CATEGORIES);
@@ -237,18 +237,13 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#F5F8F5] text-slate-900 font-sans flex flex-col items-center justify-start pb-28 pt-3 px-3 md:px-6">
-      
-      {/* CONTAINER PRINCIPAL ANCHO MÓVIL/TABLET */}
       <div className="w-full max-w-md mx-auto space-y-4">
-
-        {/* 1. TOP BAR (Mascota LUKA + Notificaciones + Ajustes) */}
+        
+        {/* Top Bar */}
         <div className="flex items-center justify-between py-1">
-          {/* Avatar Mascota LUKA con Lentes */}
           <div className="w-11 h-11 rounded-2xl bg-emerald-100 border border-emerald-300/60 flex items-center justify-center text-xl shadow-xs overflow-hidden">
             🐼
           </div>
-
-          {/* Iconos de Notificación y Configuración */}
           <div className="flex items-center gap-2">
             <button className="w-10 h-10 rounded-full bg-white border border-slate-200/80 flex items-center justify-center text-slate-700 shadow-2xs relative hover:bg-slate-50">
               <Bell size={18} />
@@ -260,10 +255,8 @@ export default function App() {
           </div>
         </div>
 
-        {/* 2. BARRA DE FILTROS CÁPSULA (Personal | S/ | Este mes) */}
+        {/* Filtros Cápsula */}
         <div className="bg-white rounded-3xl p-1.5 border border-slate-200/80 shadow-2xs flex items-center justify-between text-xs font-bold">
-          
-          {/* Badge Exclusivo Finanzas Personales */}
           <div className="bg-[#DCF8C6] text-emerald-950 rounded-2xl py-1.5 px-3.5 flex items-center gap-1.5 font-extrabold shadow-2xs">
             <UserCheck size={14} />
             <span>Personal</span>
@@ -271,7 +264,6 @@ export default function App() {
 
           <div className="h-5 w-px bg-slate-200 mx-1"></div>
 
-          {/* Moneda */}
           <button className="flex items-center gap-0.5 text-slate-800 px-1 py-1 font-extrabold">
             <span>S/</span>
             <ChevronDown size={14} className="text-slate-400" />
@@ -279,7 +271,6 @@ export default function App() {
 
           <div className="h-5 w-px bg-slate-200 mx-1"></div>
 
-          {/* Período */}
           <button className="flex items-center gap-1 text-slate-800 pr-2 py-1 font-extrabold">
             <Calendar size={14} className="text-slate-400" />
             <span>Este mes</span>
@@ -287,13 +278,9 @@ export default function App() {
           </button>
         </div>
 
-        {/* 3. VISTA MAIN DEPENDIENDO DE LA PESTAÑA ACTIVA */}
-
-        {/* PESTAÑA PRESUPUESTOS */}
+        {/* Vistas */}
         {activeTab === 'presupuestos' && (
           <div className="space-y-4">
-            
-            {/* Botón: + Editar presupuesto mensual */}
             <button
               onClick={() => { setNewBudgetVal(presupuestoTotal); setIsEditBudgetOpen(true); }}
               className="w-full bg-white border border-slate-200/90 rounded-2xl py-3 px-4 text-xs font-bold text-slate-800 flex items-center justify-start gap-2 shadow-2xs hover:bg-slate-50 transition-colors"
@@ -302,10 +289,7 @@ export default function App() {
               <span>Editar presupuesto mensual</span>
             </button>
 
-            {/* GRID 2x2 DE CARDS DE PRESUPUESTO */}
             <div className="grid grid-cols-2 gap-3">
-              
-              {/* Card 1: Presupuesto total */}
               <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-2xs space-y-2">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
@@ -318,7 +302,6 @@ export default function App() {
                 </p>
               </div>
 
-              {/* Card 2: Gastado */}
               <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-2xs space-y-2">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center">
@@ -331,7 +314,6 @@ export default function App() {
                 </p>
               </div>
 
-              {/* Card 3: Disponible */}
               <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-2xs space-y-2">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center">
@@ -344,7 +326,6 @@ export default function App() {
                 </p>
               </div>
 
-              {/* Card 4: Te queda X% del presupuesto */}
               <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-2xs space-y-2.5">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
@@ -354,8 +335,6 @@ export default function App() {
                     Te queda {porcentajeRestante}%...
                   </span>
                 </div>
-
-                {/* Progress bar verde */}
                 <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
                   <div
                     className="bg-emerald-500 h-2.5 rounded-full transition-all duration-500"
@@ -363,10 +342,8 @@ export default function App() {
                   ></div>
                 </div>
               </div>
-
             </div>
 
-            {/* SECCIÓN 1: Presupuesto por categoría */}
             <div className="bg-[#EDF8EE] rounded-3xl p-5 border border-emerald-200/60 shadow-2xs relative overflow-hidden space-y-3">
               <div className="flex items-start justify-between">
                 <div className="max-w-[65%] space-y-1">
@@ -375,8 +352,6 @@ export default function App() {
                     Asigna presupuestos a tus categorías y controla tus gastos fácilmente.
                   </p>
                 </div>
-
-                {/* Gráfico circular ilustrativo con moneda S/ */}
                 <div className="relative w-16 h-16 shrink-0 flex items-center justify-center">
                   <svg className="w-full h-full" viewBox="0 0 36 36">
                     <path className="text-emerald-300" strokeWidth="12" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
@@ -389,7 +364,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Botón Punteado: + Añadir presupuesto por categoría */}
               <button
                 onClick={() => setIsAddCategoryBudgetOpen(true)}
                 className="w-full bg-white/70 hover:bg-white border-2 border-dashed border-emerald-400/80 rounded-2xl py-3 px-4 text-xs font-bold text-emerald-800 flex items-center justify-center gap-1.5 transition-all shadow-2xs"
@@ -398,7 +372,6 @@ export default function App() {
                 <span>Añadir presupuesto por categoría</span>
               </button>
 
-              {/* Listado de Presupuestos por Categoría */}
               {categoryBudgets.length > 0 && (
                 <div className="space-y-2 pt-1">
                   {categoryBudgets.map((cb) => (
@@ -411,7 +384,6 @@ export default function App() {
               )}
             </div>
 
-            {/* SECCIÓN 2: Presupuesto por cuenta */}
             <div className="bg-[#F6F4FB] rounded-3xl p-5 border border-purple-200/60 shadow-2xs space-y-3">
               <div className="space-y-1">
                 <h3 className="font-black text-slate-900 text-base">Presupuesto por cuenta</h3>
@@ -419,8 +391,6 @@ export default function App() {
                   Establece presupuestos por cuenta y lleva un mejor control de tu dinero personal.
                 </p>
               </div>
-
-              {/* Botón Punteado: + Añadir presupuesto por cuenta */}
               <button
                 onClick={() => alert('Definir límite de gasto personal para tus tarjetas BCP, Yape o Interbank.')}
                 className="w-full bg-white/70 hover:bg-white border-2 border-dashed border-purple-300 rounded-2xl py-3 px-4 text-xs font-bold text-purple-800 flex items-center justify-center gap-1.5 transition-all shadow-2xs"
@@ -429,14 +399,12 @@ export default function App() {
                 <span>Añadir presupuesto por cuenta</span>
               </button>
             </div>
-
           </div>
         )}
 
-        {/* PESTAÑA INICIO */}
+        {/* Inicio */}
         {activeTab === 'inicio' && (
           <div className="space-y-4">
-            {/* Banner Hola y Gastos del Mes */}
             <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-2xs space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="font-black text-slate-900 text-base">¡Hola, Luana! 👋</h3>
@@ -455,7 +423,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Banner Bot WhatsApp */}
             <div className="bg-emerald-800 text-white rounded-3xl p-5 shadow-xs space-y-2">
               <div className="flex items-center gap-2">
                 <Bot size={20} className="text-emerald-300" />
@@ -469,13 +436,11 @@ export default function App() {
           </div>
         )}
 
-        {/* PESTAÑA MI DINERO */}
+        {/* Mi Dinero */}
         {activeTab === 'midinero' && (
           <div className="space-y-4">
             <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-2xs space-y-4">
               <h3 className="font-black text-slate-900 text-base">Gastos por Categoría</h3>
-
-              {/* Donut chart */}
               <div className="flex flex-col items-center justify-center py-4">
                 <div className="relative w-40 h-40 flex items-center justify-center">
                   <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
@@ -504,7 +469,7 @@ export default function App() {
           </div>
         )}
 
-        {/* PESTAÑA CATEGORÍAS */}
+        {/* Categorías */}
         {activeTab === 'categorias' && (
           <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-2xs space-y-4">
             <h3 className="font-black text-slate-900 text-base">Categorías del Sistema</h3>
@@ -522,7 +487,7 @@ export default function App() {
           </div>
         )}
 
-        {/* PESTAÑA MOVIMIENTOS */}
+        {/* Movimientos */}
         {activeTab === 'movimientos' && (
           <div className="bg-white rounded-3xl border border-slate-200/80 shadow-2xs overflow-hidden space-y-2">
             <div className="p-4 border-b border-slate-100 flex items-center justify-between">
@@ -546,7 +511,7 @@ export default function App() {
           </div>
         )}
 
-        {/* PESTAÑA BOT WHATSAPP SIMULATOR */}
+        {/* WhatsApp Bot */}
         {activeTab === 'whatsapp' && (
           <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xl overflow-hidden flex flex-col h-[520px]">
             <div className="bg-[#075E54] text-white p-3.5 flex items-center gap-3">
@@ -592,11 +557,9 @@ export default function App() {
 
       </div>
 
-      {/* 4. FLOATING BOTTOM NAVIGATION BAR */}
+      {/* Floating Bottom Nav */}
       <div className="fixed bottom-3 left-1/2 transform -translate-x-1/2 w-full max-w-sm px-2 z-50">
         <div className="bg-white border border-slate-200/90 rounded-full p-1.5 shadow-xl flex items-center justify-around text-slate-400">
-          
-          {/* Tab 1: Inicio */}
           <button
             onClick={() => setActiveTab('inicio')}
             className={`flex flex-col items-center justify-center p-2 rounded-full transition-all ${
@@ -607,7 +570,6 @@ export default function App() {
             <span className="text-[9px] mt-0.5 font-bold">Inicio</span>
           </button>
 
-          {/* Tab 2: Mi Dinero */}
           <button
             onClick={() => setActiveTab('midinero')}
             className={`flex flex-col items-center justify-center p-2 rounded-full transition-all ${
@@ -618,7 +580,6 @@ export default function App() {
             <span className="text-[9px] mt-0.5 font-bold">Mi Dinero</span>
           </button>
 
-          {/* Tab 3: Presupuestos */}
           <button
             onClick={() => setActiveTab('presupuestos')}
             className={`flex flex-col items-center justify-center px-4 py-2 rounded-full transition-all ${
@@ -629,7 +590,6 @@ export default function App() {
             <span className="text-[9px] mt-0.5 font-extrabold text-emerald-950">Presupuestos</span>
           </button>
 
-          {/* Tab 4: Categorías */}
           <button
             onClick={() => setActiveTab('categorias')}
             className={`flex flex-col items-center justify-center p-2 rounded-full transition-all ${
@@ -640,7 +600,6 @@ export default function App() {
             <span className="text-[9px] mt-0.5 font-bold">Categorías</span>
           </button>
 
-          {/* Tab 5: Movimientos */}
           <button
             onClick={() => setActiveTab('movimientos')}
             className={`flex flex-col items-center justify-center p-2 rounded-full transition-all ${
@@ -650,11 +609,10 @@ export default function App() {
             <Activity size={18} />
             <span className="text-[9px] mt-0.5 font-bold">Movimientos</span>
           </button>
-
         </div>
       </div>
 
-      {/* MODAL: EDITAR PRESUPUESTO MENSUAL */}
+      {/* Modals */}
       {isEditBudgetOpen && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 w-full max-w-xs shadow-2xl space-y-4">
@@ -684,7 +642,6 @@ export default function App() {
         </div>
       )}
 
-      {/* MODAL: AÑADIR PRESUPUESTO POR CATEGORÍA */}
       {isAddCategoryBudgetOpen && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 w-full max-w-xs shadow-2xl space-y-4">
@@ -727,7 +684,6 @@ export default function App() {
         </div>
       )}
 
-      {/* MODAL: REGISTRAR GASTO RÁPIDO */}
       {isAddTxOpen && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 w-full max-w-xs shadow-2xl space-y-3 text-xs">
